@@ -20,13 +20,14 @@
     </p>
     <p><span id="message"></span></p>
     <p>
-        <input type="password" id="ACCESS_ID" name="ACCESS ID" placeholder="ACCESS ID" value=""/>
+        <input hidden type="password" id="ACCESS_ID" name="ACCESS ID" placeholder="ACCESS ID" value=""/>
     </p>
     <p>
-        <input type="password" id="SECRET_KEY" name="SECRET KEY" placeholder="SECRET KEY" value=""/>
+        <input hidden type="password" id="SECRET_KEY" name="SECRET KEY" placeholder="SECRET KEY" value=""/>
     </p>
     <p>
-        <input type="text" id="BOT" name="BOT" placeholder="nFinia" value="nFinia"/>
+        <label>Bot:</label>
+        <input readonly type="text" id="BOT" name="BOT" placeholder="nFinia" value="nFinia"/>
     </p>
 </div>
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.930.0.min.js"></script>
@@ -37,7 +38,7 @@
     var waveform = window.Waveform();
     var message = document.getElementById('message');
     var config, conversation;
-    message.textContent = 'Passive';
+    message.textContent = 'Waiting';
 
     document.getElementById('audio-control').onclick = function () {
 
@@ -57,8 +58,8 @@
                 waveform.clearCanvas();
             }
         }, function (data) {
-            console.log('Transcript: ', data.inputTranscript, ", Response: ", data.message);
-            message.textContent = data.inputTranscript;
+            console.log('data: ', data);
+            message.innerHTML = `You said "${data.inputTranscript}"<br/> Recognized as "${data.intentName}"`;
         }, function (error) {
             message.textContent = error;
         }, function (timeDomain, bufferLength) {

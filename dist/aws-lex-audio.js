@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function () {
   'use strict';
   var rec = require('./recorder.js');
@@ -221,17 +221,17 @@
   };
 })();
 
-},{"./recorder.js":5}],2:[function(require,module,exports){
+},{"./recorder.js":4}],2:[function(require,module,exports){
 (function() {
   'use strict';
   var AudioControl = require('./control.js').audioControl;
 
-  var DEFAULT_LATEST = '$LATEST';
+  var DEFAULT_LATEST = 'test';
   var DEFAULT_CONTENT_TYPE = 'audio/x-l16; sample-rate=16000';
-  var DEFAULT_USER_ID = 'userId';
+  var DEFAULT_USER_ID = 'testuser';
   var DEFAULT_ACCEPT_HEADER_VALUE = 'audio/mpeg';
   var MESSAGES = Object.freeze({
-    PASSIVE: 'Passive',
+    PASSIVE: 'Waiting',
     LISTENING: 'Listening',
     SENDING: 'Sending',
     SPEAKING: 'Speaking'
@@ -264,6 +264,14 @@
       this.onError('A Region value must be provided.');
       return;
     }
+
+    var creds = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:8a42e098-8c93-4101-877e-0b7682b699c2'
+    });
+    AWS.config.update({
+      region: 'us-east-1',
+      credentials: creds
+    });
 
     lexruntime = new AWS.LexRuntime();
 
@@ -345,6 +353,7 @@
     state.message = state.messages.SENDING;
     this.advanceConversation = function() {
       state.lexConfig.inputStream = state.audioInput;
+      console.log(state.lexConfig);
       lexruntime.postContent(state.lexConfig, function(err, data) {
         if (err) {
           state.onError(err);
@@ -386,7 +395,7 @@
 
     var lexConfig = config.lexConfig || {};
     lexConfig.botAlias = lexConfig.hasOwnProperty('botAlias') ? lexConfig.botAlias : DEFAULT_LATEST;
-    lexConfig.botName = lexConfig.hasOwnProperty('botName') ? lexConfig.botName : '';
+    lexConfig.botName = lexConfig.hasOwnProperty('botName') ? lexConfig.botName : 'nFinia';
     lexConfig.contentType = lexConfig.hasOwnProperty('contentType') ? lexConfig.contentType : DEFAULT_CONTENT_TYPE;
     lexConfig.userId = lexConfig.hasOwnProperty('userId') ? lexConfig.userId : DEFAULT_USER_ID;
     lexConfig.accept = lexConfig.hasOwnProperty('accept') ? lexConfig.accept : DEFAULT_ACCEPT_HEADER_VALUE;
@@ -398,7 +407,7 @@
 })();
 
 },{"./control.js":1}],3:[function(require,module,exports){
-(function (global){
+(function (global){(function (){
 /**
  * @module LexAudio
  * @description The global namespace for Amazon Lex Audio
@@ -407,91 +416,8 @@ global.LexAudio = global.LexAudio || {};
 global.LexAudio.audioControl = require('./control.js').audioControl;
 global.LexAudio.conversation = require('./conversation.js').conversation;
 module.exports = global.LexAudio;
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./control.js":1,"./conversation.js":2}],4:[function(require,module,exports){
-var bundleFn = arguments[3];
-var sources = arguments[4];
-var cache = arguments[5];
-
-var stringify = JSON.stringify;
-
-module.exports = function (fn, options) {
-    var wkey;
-    var cacheKeys = Object.keys(cache);
-
-    for (var i = 0, l = cacheKeys.length; i < l; i++) {
-        var key = cacheKeys[i];
-        var exp = cache[key].exports;
-        // Using babel as a transpiler to use esmodule, the export will always
-        // be an object with the default export as a property of it. To ensure
-        // the existing api and babel esmodule exports are both supported we
-        // check for both
-        if (exp === fn || exp && exp.default === fn) {
-            wkey = key;
-            break;
-        }
-    }
-
-    if (!wkey) {
-        wkey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
-        var wcache = {};
-        for (var i = 0, l = cacheKeys.length; i < l; i++) {
-            var key = cacheKeys[i];
-            wcache[key] = key;
-        }
-        sources[wkey] = [
-            Function(['require','module','exports'], '(' + fn + ')(self)'),
-            wcache
-        ];
-    }
-    var skey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
-
-    var scache = {}; scache[wkey] = wkey;
-    sources[skey] = [
-        Function(['require'], (
-            // try to call default if defined to also support babel esmodule
-            // exports
-            'var f = require(' + stringify(wkey) + ');' +
-            '(f.default ? f.default : f)(self);'
-        )),
-        scache
-    ];
-
-    var workerSources = {};
-    resolveSources(skey);
-
-    function resolveSources(key) {
-        workerSources[key] = true;
-
-        for (var depPath in sources[key][1]) {
-            var depKey = sources[key][1][depPath];
-            if (!workerSources[depKey]) {
-                resolveSources(depKey);
-            }
-        }
-    }
-
-    var src = '(' + bundleFn + ')({'
-        + Object.keys(workerSources).map(function (key) {
-            return stringify(key) + ':['
-                + sources[key][0]
-                + ',' + stringify(sources[key][1]) + ']'
-            ;
-        }).join(',')
-        + '},{},[' + stringify(skey) + '])'
-    ;
-
-    var URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-
-    var blob = new Blob([src], { type: 'text/javascript' });
-    if (options && options.bare) { return blob; }
-    var workerUrl = URL.createObjectURL(blob);
-    var worker = new Worker(workerUrl);
-    worker.objectURL = workerUrl;
-    return worker;
-};
-
-},{}],5:[function(require,module,exports){
  (function () {
   'use strict';
   var work = require('webworkify');
@@ -671,7 +597,7 @@ module.exports = function (fn, options) {
 
   };
 })();
-},{"./worker.js":6,"webworkify":4}],6:[function(require,module,exports){
+},{"./worker.js":5,"webworkify":6}],5:[function(require,module,exports){
 module.exports = function (self) {
   'use strict';
   var recLength = 0,
@@ -785,6 +711,88 @@ module.exports = function (self) {
 
     return view;
   }
+};
+
+},{}],6:[function(require,module,exports){
+var bundleFn = arguments[3];
+var sources = arguments[4];
+var cache = arguments[5];
+
+var stringify = JSON.stringify;
+
+module.exports = function (fn, options) {
+    var wkey;
+    var cacheKeys = Object.keys(cache);
+
+    for (var i = 0, l = cacheKeys.length; i < l; i++) {
+        var key = cacheKeys[i];
+        var exp = cache[key].exports;
+        // Using babel as a transpiler to use esmodule, the export will always
+        // be an object with the default export as a property of it. To ensure
+        // the existing api and babel esmodule exports are both supported we
+        // check for both
+        if (exp === fn || exp && exp.default === fn) {
+            wkey = key;
+            break;
+        }
+    }
+
+    if (!wkey) {
+        wkey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+        var wcache = {};
+        for (var i = 0, l = cacheKeys.length; i < l; i++) {
+            var key = cacheKeys[i];
+            wcache[key] = key;
+        }
+        sources[wkey] = [
+            'function(require,module,exports){' + fn + '(self); }',
+            wcache
+        ];
+    }
+    var skey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+
+    var scache = {}; scache[wkey] = wkey;
+    sources[skey] = [
+        'function(require,module,exports){' +
+            // try to call default if defined to also support babel esmodule exports
+            'var f = require(' + stringify(wkey) + ');' +
+            '(f.default ? f.default : f)(self);' +
+        '}',
+        scache
+    ];
+
+    var workerSources = {};
+    resolveSources(skey);
+
+    function resolveSources(key) {
+        workerSources[key] = true;
+
+        for (var depPath in sources[key][1]) {
+            var depKey = sources[key][1][depPath];
+            if (!workerSources[depKey]) {
+                resolveSources(depKey);
+            }
+        }
+    }
+
+    var src = '(' + bundleFn + ')({'
+        + Object.keys(workerSources).map(function (key) {
+            return stringify(key) + ':['
+                + sources[key][0]
+                + ',' + stringify(sources[key][1]) + ']'
+            ;
+        }).join(',')
+        + '},{},[' + stringify(skey) + '])'
+    ;
+
+    var URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+    var blob = new Blob([src], { type: 'text/javascript' });
+    if (options && options.bare) { return blob; }
+    var workerUrl = URL.createObjectURL(blob);
+    var worker = new Worker(workerUrl);
+    worker.objectURL = workerUrl;
+    return worker;
 };
 
 },{}]},{},[3]);
