@@ -26,12 +26,12 @@
     "mocha-cobertura-reporter": "~1.0.4",
     "semver": "*",
     "travis-cov": "~0.2.5",
-    "xml2js": "0.4.23"
-  },
-  "dependencies": {
-    "aws-sdk": ">=2.48.0",
+    "xml2js": "0.4.23",
     "phantomjs": "^2.1.1",
     "webworkify": "^1.5.0"
+  },
+  "dependencies": {
+    "aws-sdk": ">=2.48.0"
   },
   "main": "lib/lex-audio.js",
   "directories": {
